@@ -1,9 +1,16 @@
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
+import com.google.firebase.ThreadManager;
 import com.google.firebase.internal.NonNull;
+import io.netty.util.internal.logging.InternalLogLevel;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Log4JLoggerFactory;
 import notifications.NotificationService;
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -14,7 +21,10 @@ public class Main {
 
 	static final Logger LOGGER = Logger.getLogger(Thread.currentThread().getName());
 
+
 	public static void main(String[] args) {
+		// Firebase uses Netty under the hood and the last spoils my pretty logs
+		Logger.getLogger("io.netty").setLevel(Level.WARN);
 		LOGGER.info("\n\n\n");
 		LOGGER.info("Start server application");
 
@@ -26,13 +36,13 @@ public class Main {
 			System.exit(1);
 		}
 
+//		System.out.close();
+//		System.err.close();
+
 		final String pathToServiceKey = args[0];
 		final String databaseURL = args[1];
 		LOGGER.info("Path to service key: [" + pathToServiceKey + ']');
 		LOGGER.info("URL of Database: [" + databaseURL + ']');
-
-//		System.out.close();
-//		System.err.close();
 
 		initializeSDK(pathToServiceKey, databaseURL);
 
