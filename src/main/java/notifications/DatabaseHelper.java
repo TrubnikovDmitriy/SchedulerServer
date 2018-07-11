@@ -13,13 +13,17 @@ public final class DatabaseHelper {
 	static final String WATCHERS = "watchers";
 	static final String TOKEN = "token";
 
+	public static final String TIME = "timestamp";
 	public static final String TITLE = "title";
+	public static final String TYPE = "type";
+	public static final String TEXT = "text";
 
 
 	static DatabaseReference getPrivate() {
-		return FirebaseDatabase.getInstance().getReference(PRIVATE);
+		return FirebaseDatabase
+				.getInstance()
+				.getReference(PRIVATE);
 	}
-
 	
 	public static DatabaseReference getPublicInfoList() {
 		return FirebaseDatabase.getInstance().getReference()

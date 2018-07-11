@@ -1,12 +1,7 @@
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import com.google.firebase.ThreadManager;
 import com.google.firebase.internal.NonNull;
-import io.netty.util.internal.logging.InternalLogLevel;
-import io.netty.util.internal.logging.InternalLogger;
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Log4JLoggerFactory;
 import notifications.NotificationService;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -35,9 +30,6 @@ public class Main {
 			LOGGER.error("Not enouth arguments, shutting down");
 			System.exit(1);
 		}
-
-//		System.out.close();
-//		System.err.close();
 
 		final String pathToServiceKey = args[0];
 		final String databaseURL = args[1];
