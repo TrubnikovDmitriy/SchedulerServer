@@ -77,8 +77,11 @@ public class EventModel {
 		final HashMap<String, String> firebaseModel = new HashMap<>();
 		firebaseModel.put("text", text);
 		firebaseModel.put("title", title);
+		firebaseModel.put("timestamp", timestamp.toString());
 		firebaseModel.put("type", type.name());
 		firebaseModel.put("priority", priority.name());
+		firebaseModel.put("eventID", eventID);
+		firebaseModel.put("dashID", dashID);
 		return firebaseModel;
 	}
 }
