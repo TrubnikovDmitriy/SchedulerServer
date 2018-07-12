@@ -14,8 +14,8 @@ import org.joda.time.DateTime;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 class PrivateDataHandler implements Runnable, ValueEventListener {
@@ -23,10 +23,13 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 	private static long oldTime = DateTime.now().getMillis() - NotificationService.DELAY_BETWEEN_PRIVATE_RETRIEVE;
 	private static long newTime = 0L;
 
+	private static final int THREAD_COUNT = 10 * Runtime.getRuntime().availableProcessors();
+	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(THREAD_COUNT);
 	private static final AtomicBoolean IS_RUNNING = new AtomicBoolean(false);
 
+	private final AtomicLong threadCounter = new AtomicLong();
 	private final Logger logger = Logger.getLogger(getClass());
-
+	
 
 	@Override
 	public void run() {
@@ -54,29 +57,68 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 			return;
 		}
 
-		logger.debug("Total number of users' nodes: " + dataSnapshot.getChildrenCount());
 
-		final ExecutorService parseExecutor = Executors.newFixedThreadPool(2 * Runtime.getRuntime().availableProcessors());
-		final ConcurrentLinkedQueue<Notification> queue = new ConcurrentLinkedQueue<>();
+		synchronized (threadCounter) {
 
-		// Start parsing users' nodes in parallel threads
-		for (final DataSnapshot userNode : dataSnapshot.getChildren()) {
-			parseExecutor.execute(new ParseUserNode(userNode, queue));
+			final ConcurrentLinkedQueue<Notification> queue = new ConcurrentLinkedQueue<>();
+			final OnTaskComplete onTaskComplete = () -> {
+				final long remainTasks = threadCounter.decrementAndGet();
+				// If all tasks are completed, then notify the main thread
+				if (remainTasks == 0) {
+					synchronized (threadCounter) {
+						threadCounter.notify();
+					}
+				}
+			};
+
+			// Start parsing users' nodes in parallel threads
+			if (dataSnapshot.getChildrenCount() != 0) {
+				threadCounter.set(dataSnapshot.getChildrenCount());
+				for (final DataSnapshot userNode : dataSnapshot.getChildren()) {
+					EXECUTOR.execute(new ParseUserNode(userNode, queue, onTaskComplete));
+				}
+				try {
+					final long startParseTime = DateTime.now().getMillis();
+					logger.debug("Start to wait parsing");
+
+					// Wait until other threads finish working
+					threadCounter.wait();
+
+					final long parseTime = DateTime.now().getMillis() - startParseTime;
+					logger.info("Parsing take [" + parseTime + " ms] for [" +
+							dataSnapshot.getChildrenCount() + " tasks]");
+
+				} catch (InterruptedException e) {
+					logger.error("The wait of parsing is interrupted", e);
+					IS_RUNNING.set(false);
+					return;
+				}
+			}
+
+
+			// Start sending messages to users
+			if (!queue.isEmpty()) {
+				threadCounter.set(queue.size());
+				for (final Notification notification : queue) {
+					EXECUTOR.execute(new SendNotification(notification, onTaskComplete));
+				}
+				try {
+					final long startSendTime = DateTime.now().getMillis();
+					logger.debug("Start to wait sending");
+
+					// Wait until other threads finish working
+					threadCounter.wait();
+
+					final long sendTime = DateTime.now().getMillis() - startSendTime;
+					logger.info("Sending take [" + sendTime + " ms] for [" + queue.size() + " tasks]");
+
+				} catch (InterruptedException e) {
+					logger.error("The wait of sending is interrupted", e);
+					IS_RUNNING.set(false);
+					return;
+				}
+			}
 		}
-		logger.info("Start parsing snapshot");
-		shutdownAndAwaitTermination(parseExecutor);
-		logger.info("End parsing snapshot");
-
-
-		final ExecutorService sendExecutor = Executors.newFixedThreadPool(2 * Runtime.getRuntime().availableProcessors());
-		// Start sending messages to users
-		for (final Notification notification : queue) {
-			sendExecutor.execute(new SendNotification(notification));
-		}
-		logger.info("Start sending messages");
-		shutdownAndAwaitTermination(sendExecutor);
-		logger.info("End sending messages");
-
 
 		logger.info("End retrieve private data from Firebase RD");
 		oldTime = newTime;
@@ -93,11 +135,15 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 	private static class ParseUserNode implements Runnable {
 
 		private final ConcurrentLinkedQueue<Notification> queue;
+		private final OnTaskComplete onTaskComplete;
 		private final DataSnapshot userNode;
 
-		ParseUserNode(DataSnapshot userNode, ConcurrentLinkedQueue<Notification> queue) {
-			this.userNode = userNode;
+		ParseUserNode(DataSnapshot userNode,
+		              ConcurrentLinkedQueue<Notification> queue,
+		              OnTaskComplete onTaskComplete) {
 			this.queue = queue;
+			this.userNode = userNode;
+			this.onTaskComplete = onTaskComplete;
 		}
 
 		@Override
@@ -114,6 +160,7 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 
 			if (token == null) {
 				logger.error("Token of user <" + userUID + "> is not defined");
+				onTaskComplete.complete();
 				return;
 			}
 
@@ -123,6 +170,7 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 
 			if (events == null) {
 				logger.debug("User hasn't dashboards");
+				onTaskComplete.complete();
 				return;
 			}
 
@@ -158,15 +206,18 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 				queue.add(notification);
 			}
 			logger.debug("End parse user's node");
+			onTaskComplete.complete();
 		}
 	}
 
 	private static class SendNotification implements Runnable {
 
+		private final OnTaskComplete onTaskComplete;
 		private final Notification notification;
 
-		SendNotification(Notification notification) {
+		SendNotification(Notification notification, OnTaskComplete onTaskComplete) {
 			this.notification = notification;
+			this.onTaskComplete = onTaskComplete;
 		}
 
 		@Override
@@ -190,6 +241,8 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 					logger.error(e.getMessage(), e);
 				}
 			}
+
+			onTaskComplete.complete();
 		}
 	}
 
@@ -238,37 +291,7 @@ class PrivateDataHandler implements Runnable, ValueEventListener {
 		}
 	}
 
-	private static void shutdownAndAwaitTermination(ExecutorService executor) {
-
-		final Logger errorLog = Logger.getLogger(Thread.currentThread().getName());
-
-		// Disable new tasks from being submitted
-		executor.shutdown();
-		try {
-			// Wait a while for existing tasks to terminate
-			boolean isTerminate = executor.awaitTermination(
-					10 * NotificationService.DELAY_BETWEEN_PRIVATE_RETRIEVE,
-					TimeUnit.MILLISECONDS
-			);
-
-			if (!isTerminate) {
-				errorLog.error("The task is still not completed");
-				// Cancel currently executing tasks
-				executor.shutdownNow();
-				// Wait a while for tasks to respond to being cancelled
-				isTerminate = executor.awaitTermination(
-						NotificationService.DELAY_BETWEEN_PRIVATE_RETRIEVE,
-						TimeUnit.MILLISECONDS
-				);
-				if (!isTerminate) {
-					errorLog.error("Pool did not terminate");
-				}
-			}
-
-		} catch (InterruptedException e) {
-			errorLog.error("Interrupted while waiting parse", e);
-			executor.shutdownNow();
-			Thread.currentThread().interrupt();
-		}
+	public interface OnTaskComplete {
+		void complete();
 	}
 }
