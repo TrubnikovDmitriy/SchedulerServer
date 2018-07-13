@@ -14,6 +14,7 @@ public final class DatabaseHelper {
 	public static final String WATCHERS = "watchers";
 	public static final String TOKEN = "token";
 
+	public static final String USER_UID = "userUID";
 	public static final String TIME = "timestamp";
 	public static final String TITLE = "title";
 	public static final String TYPE = "type";

@@ -3,6 +3,7 @@ package parallelworking.tasks;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.gson.Gson;
 import models.Event;
 import models.TokenNotification;
 import models.TopicNotification;
@@ -23,11 +24,13 @@ public class PublicSendTask extends Task<TopicNotification> {
 		logger.debug("Sending [" + notification.getNotification().size() +
 				" message(s)] for topic " + notification.getTopic());
 
+		final Gson gson = new Gson();
+
 		for (final Event event : notification.getNotification()) {
 			// Build message
 			final Message message = Message.builder()
 					.setTopic(notification.getTopic())
-					.putAllData(event.toMap())
+					.putData("public", gson.toJson(event))
 					.build();
 
 			// Send message

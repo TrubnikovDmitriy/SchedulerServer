@@ -1,12 +1,15 @@
 package parallelworking.tasks;
 
+import com.google.firebase.messaging.AndroidConfig;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
+import com.google.gson.Gson;
 import models.Event;
 import models.TokenNotification;
 import org.apache.log4j.Logger;
 import parallelworking.Task;
+import tools.DatabaseHelper;
 
 public class PrivateSendTask extends Task<TokenNotification> {
 
@@ -22,11 +25,14 @@ public class PrivateSendTask extends Task<TokenNotification> {
 		logger.debug("Sending [" + notification.getNotification().size() +
 				" message(s)] for user " + notification.getUserUID());
 
+		final Gson gson = new Gson();
+
 		for (final Event event : notification.getNotification()) {
 			// Build message
 			final Message message = Message.builder()
 					.setToken(notification.getToken())
-					.putAllData(event.toMap())
+					.putData(DatabaseHelper.PRIVATE, gson.toJson(event))
+					.putData(DatabaseHelper.USER_UID, notification.getUserUID())
 					.build();
 
 			// Send message
