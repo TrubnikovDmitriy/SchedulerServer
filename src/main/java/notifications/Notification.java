@@ -8,18 +8,19 @@ import com.google.firebase.internal.NonNull;
 import models.Event;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import parallelworking.DateChecker;
 
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-public abstract class Notification implements Runnable, ValueEventListener {
+public abstract class Notification implements Runnable, ValueEventListener, DateChecker {
 
-	private static final AtomicBoolean IS_ACTIVE = new AtomicBoolean(false);
+	private final AtomicBoolean isActive = new AtomicBoolean(false);
 
-	protected static long retrieveTime = 0L;
-	protected static long newTime = 0L;
-	protected static long oldTime = DateTime.now().getMillis();
+	protected long retrieveTime = 0L;
+	protected long newTime = 0L;
+	protected long oldTime = DateTime.now().getMillis();
 
 	protected final Logger logger = Logger.getLogger(getClass());
 	protected final long millisecDelay;
@@ -32,7 +33,7 @@ public abstract class Notification implements Runnable, ValueEventListener {
 	@Override
 	public final void run() {
 		// If the previous tasks are not completed
-		if (!IS_ACTIVE.compareAndSet(false, true)) {
+		if (!isActive.compareAndSet(false, true)) {
 			logger.error("The previous task is still running");
 			return;
 		}
@@ -55,13 +56,13 @@ public abstract class Notification implements Runnable, ValueEventListener {
 		} else {
 			logger.error("Recieved data is null");
 		}
-		IS_ACTIVE.set(false);
+		isActive.set(false);
 	}
 
 	@Override
 	public final void onCancelled(DatabaseError databaseError) {
 		logger.error(databaseError.getMessage(), databaseError.toException());
-		IS_ACTIVE.set(false);
+		isActive.set(false);
 	}
 
 
@@ -70,8 +71,9 @@ public abstract class Notification implements Runnable, ValueEventListener {
 	protected abstract DatabaseReference getReference();
 
 
+	@Override
 	@SuppressWarnings("OverlyComplexMethod")
-	public static boolean isItTime(final long time, Event.EventType type) {
+	public boolean checkDate(final long time, Event.EventType type) {
 
 		final Logger debugLogger = Logger.getLogger(Thread.currentThread().getName());
 		debugLogger.debug("Time: " + time + ", type: " + type.name());
@@ -83,7 +85,7 @@ public abstract class Notification implements Runnable, ValueEventListener {
 				millisOfDay <= new DateTime(oldTime).getMillisOfDay() ||
 						new DateTime(newTime).getMillisOfDay() < millisOfDay;
 
-		// In any case, the time is out of range
+		// When in any case, the time is out of range
 		if (isItOutOfTimeRange) {
 			debugLogger.debug("It is not now");
 			return false;

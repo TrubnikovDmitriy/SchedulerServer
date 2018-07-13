@@ -24,7 +24,7 @@ public class NotificationService {
 
 		scheduler.scheduleWithFixedDelay(
 				new PublicNotification(DELAY_MILLISECONDS),
-				DELAY_MILLISECONDS / 2,
+				0,
 				DELAY_MILLISECONDS,
 				TimeUnit.MILLISECONDS
 		);

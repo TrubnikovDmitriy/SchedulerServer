@@ -7,6 +7,7 @@ import models.TopicNotification;
 import notifications.Notification;
 import notifications.PrivateNotification;
 import org.apache.log4j.Logger;
+import parallelworking.DateChecker;
 import parallelworking.Task;
 
 import java.util.Collection;
@@ -16,11 +17,14 @@ public class PublicParseTask extends Task<DataSnapshot> {
 
 	private final Collection<TopicNotification> queue;
 	private final DataSnapshot eventsNode;
+	private final DateChecker dateChecker;
 
 	public PublicParseTask(@NonNull DataSnapshot eventsNode,
-	                       Collection<TopicNotification> queue) {
+	                       @NonNull Collection<TopicNotification> queue,
+	                       @NonNull DateChecker dateChecker) {
 		this.queue = queue;
 		this.eventsNode = eventsNode;
+		this.dateChecker = dateChecker;
 	}
 
 	@Override
@@ -42,7 +46,7 @@ public class PublicParseTask extends Task<DataSnapshot> {
 			}
 
 			logger.debug("Check event <" + eventID + '>');
-			if (!Notification.isItTime(event.getTimestamp(), event.getType())) {
+			if (!dateChecker.checkDate(event.getTimestamp(), event.getType())) {
 				continue;
 			}
 			logger.debug("The time of event <" + eventID + "> has come");

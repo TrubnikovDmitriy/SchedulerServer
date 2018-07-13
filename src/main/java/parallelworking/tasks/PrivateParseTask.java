@@ -1,9 +1,11 @@
 package parallelworking.tasks;
 
 import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.internal.NonNull;
 import models.Event;
 import models.TokenNotification;
 import notifications.Notification;
+import parallelworking.DateChecker;
 import tools.DatabaseHelper;
 import notifications.PrivateNotification;
 import org.apache.log4j.Logger;
@@ -16,10 +18,14 @@ public class PrivateParseTask extends Task<DataSnapshot> {
 
 	private final Collection<TokenNotification> queue;
 	private final DataSnapshot userNode;
+	private final DateChecker dateChecker;
 
-	public PrivateParseTask(DataSnapshot userNode, Collection<TokenNotification> queue) {
+	public PrivateParseTask(@NonNull DataSnapshot userNode,
+	                        @NonNull Collection<TokenNotification> queue,
+	                        @NonNull DateChecker dateChecker) {
 		this.queue = queue;
 		this.userNode = userNode;
+		this.dateChecker = dateChecker;
 	}
 
 	@Override
@@ -64,7 +70,7 @@ public class PrivateParseTask extends Task<DataSnapshot> {
 
 				logger.debug("Check event <" + eventNode.getKey() + '>');
 
-				if (!Notification.isItTime(event.getTimestamp(), event.getType())) {
+				if (!dateChecker.checkDate(event.getTimestamp(), event.getType())) {
 					continue;
 				}
 				logger.debug("The time of event <" + eventNode.getKey() + "> has come");

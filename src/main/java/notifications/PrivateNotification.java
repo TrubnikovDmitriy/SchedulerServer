@@ -16,8 +16,8 @@ import java.util.concurrent.Executors;
 
 public class PrivateNotification extends Notification {
 
-	private static final int THREAD_COUNT = 2 * Runtime.getRuntime().availableProcessors();
-	private static final ExecutorService EXECUTOR = Executors.newFixedThreadPool(THREAD_COUNT);
+	private final int maxThread = 2 * Runtime.getRuntime().availableProcessors();
+	private final ExecutorService executor = Executors.newFixedThreadPool(maxThread);
 
 	public PrivateNotification(long millisecDelay) {
 		super(millisecDelay);
@@ -28,8 +28,8 @@ public class PrivateNotification extends Notification {
 
 		final ConcurrentLinkedQueue<TokenNotification> notifications = new ConcurrentLinkedQueue<>();
 
-		final TasksExecutor parseExecutor = new PrivateParseExecutor(EXECUTOR, userNodes, notifications);
-		final TasksExecutor sendExecutor = new PrivateSendExecutor(EXECUTOR, notifications);
+		final TasksExecutor parseExecutor = new PrivateParseExecutor(executor, userNodes, notifications, this);
+		final TasksExecutor sendExecutor = new PrivateSendExecutor(executor, notifications);
 
 		try {
 			parseExecutor.parallelExecute();

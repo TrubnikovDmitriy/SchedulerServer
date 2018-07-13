@@ -2,6 +2,7 @@ package parallelworking.executors;
 
 import com.google.firebase.database.DataSnapshot;
 import models.TokenNotification;
+import parallelworking.DateChecker;
 import parallelworking.Task;
 import parallelworking.TasksExecutor;
 import parallelworking.tasks.PrivateParseTask;
@@ -14,13 +15,17 @@ public class PrivateParseExecutor extends TasksExecutor<DataSnapshot> {
 
 	private final DataSnapshot userNodes;
 	private final Collection<TokenNotification> notifications;
+	private final DateChecker dateChecker;
 
 	public PrivateParseExecutor(ExecutorService service,
 	                            DataSnapshot inputData,
-	                            Collection<TokenNotification> outputData) {
+	                            Collection<TokenNotification> outputData,
+	                            DateChecker dateChecker) {
 		super(service);
 		this.userNodes = inputData;
 		this.notifications = outputData;
+		this.dateChecker = dateChecker;
+
 	}
 
 	@Override
@@ -35,6 +40,6 @@ public class PrivateParseExecutor extends TasksExecutor<DataSnapshot> {
 
 	@Override
 	protected Task<DataSnapshot> getTask(DataSnapshot userNode) {
-		return new PrivateParseTask(userNode, notifications);
+		return new PrivateParseTask(userNode, notifications, dateChecker);
 	}
 }
