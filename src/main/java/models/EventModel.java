@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 
+@SuppressWarnings("unused")
 public class EventModel {
 
 	private String eventID;
@@ -30,8 +31,6 @@ public class EventModel {
 		ULTRA_HIGH
 	}
 
-
-	public EventModel() { }
 
 	public void setEventID(String eventID) {
 		this.eventID = eventID;

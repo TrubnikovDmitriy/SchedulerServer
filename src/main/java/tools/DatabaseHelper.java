@@ -1,17 +1,18 @@
-package notifications;
+package tools;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+
 public final class DatabaseHelper {
 
-	static final String PRIVATE = "private";
-	static final String PUBLIC = "public";
-	static final String DASHBOARDS = "dashboards";
-	static final String EVENTS = "events";
-	static final String INFO = "info";
-	static final String WATCHERS = "watchers";
-	static final String TOKEN = "token";
+	public static final String PRIVATE = "private";
+	public static final String PUBLIC = "public";
+	public static final String DASHBOARDS = "dashboards";
+	public static final String EVENTS = "events";
+	public static final String INFO = "info";
+	public static final String WATCHERS = "watchers";
+	public static final String TOKEN = "token";
 
 	public static final String TIME = "timestamp";
 	public static final String TITLE = "title";
@@ -19,7 +20,7 @@ public final class DatabaseHelper {
 	public static final String TEXT = "text";
 
 
-	static DatabaseReference getPrivate() {
+	public static DatabaseReference getPrivate() {
 		return FirebaseDatabase
 				.getInstance()
 				.getReference(PRIVATE);

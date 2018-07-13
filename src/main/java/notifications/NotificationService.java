@@ -7,14 +7,14 @@ import java.util.concurrent.TimeUnit;
 
 public class NotificationService {
 
-	public static final long DELAY_BETWEEN_PRIVATE_RETRIEVE = 30_000L; // TimeUnit.MILLISECONDS
 
 	public static void start() {
-		final ScheduledExecutorService privateScheduler = Executors.newSingleThreadScheduledExecutor();
-		privateScheduler.scheduleWithFixedDelay(
-				new PrivateDataHandler(),
+		final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+		scheduler.scheduleWithFixedDelay(
+				new PrivateNotification(),
 				0,
-				DELAY_BETWEEN_PRIVATE_RETRIEVE,
+				PrivateNotification.DELAY_MILLISECONDS,
 				TimeUnit.MILLISECONDS
 		);
 	}
