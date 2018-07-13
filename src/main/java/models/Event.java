@@ -5,7 +5,7 @@ import java.util.Map;
 
 
 @SuppressWarnings("unused")
-public class EventModel {
+public class Event {
 
 	private String eventID;
 	private String dashID;

@@ -4,21 +4,21 @@ import java.util.LinkedList;
 import java.util.List;
 
 
-public class Notification {
+public class TokenNotification {
 
 	private final String userUID;
 	private final String token;
-	private final List<EventModel> notification;
+	private final List<Event> notification;
 
 
-	public Notification(String userUID, String token) {
+	public TokenNotification(String userUID, String token) {
 		this.userUID = userUID;
 		this.token = token;
 		notification = new LinkedList<>();
 	}
 
-	public void addNotification(final EventModel eventModel) {
-		notification.add(eventModel);
+	public void addNotification(final Event event) {
+		notification.add(event);
 	}
 
 	public String getUserUID() {
@@ -29,7 +29,7 @@ public class Notification {
 		return token;
 	}
 
-	public List<EventModel> getNotification() {
+	public List<Event> getNotification() {
 		return notification;
 	}
 }

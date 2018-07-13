@@ -20,7 +20,7 @@ public abstract class TasksExecutor<T> {
 
 	public final void parallelExecute() throws InterruptedException {
 
-		if (getIterableSize() == 0) {
+		if (getSize() == 0) {
 			logger.info("No tasks");
 			return;
 		}
@@ -31,7 +31,7 @@ public abstract class TasksExecutor<T> {
 			logger.debug("Start execution tasks");
 
 
-			threadCounter.set(getIterableSize());
+			threadCounter.set(getSize());
 			final OnTaskComplete listener = () -> {
 				final long remainTasks = threadCounter.decrementAndGet();
 				// If all tasks are completed, then notify the main thread
@@ -53,14 +53,14 @@ public abstract class TasksExecutor<T> {
 
 
 			final long executionTime = DateTime.now().getMillis() - timeStart;
-			logger.info("Execution takes [" + executionTime + " ms] for [" + getIterableSize() + " tasks]");
+			logger.info("Execution takes [" + executionTime + " ms] for [" + getSize() + " tasks]");
 		}
 	}
 
 
-	protected abstract long getIterableSize();
+	protected abstract long getSize();
 
 	protected abstract Iterable<T> getIterable();
 
-	protected abstract Task getTask(T entity);
+	protected abstract Task<T> getTask(T entity);
 }

@@ -1,8 +1,9 @@
 package parallelworking.tasks;
 
 import com.google.firebase.database.DataSnapshot;
-import models.EventModel;
-import models.Notification;
+import models.Event;
+import models.TokenNotification;
+import notifications.Notification;
 import tools.DatabaseHelper;
 import notifications.PrivateNotification;
 import org.apache.log4j.Logger;
@@ -11,12 +12,12 @@ import parallelworking.Task;
 import java.util.Collection;
 
 
-public class ParsingTask extends Task {
+public class PrivateParseTask extends Task<DataSnapshot> {
 
-	private final Collection<Notification> queue;
+	private final Collection<TokenNotification> queue;
 	private final DataSnapshot userNode;
 
-	public ParsingTask(DataSnapshot userNode, Collection<Notification> queue) {
+	public PrivateParseTask(DataSnapshot userNode, Collection<TokenNotification> queue) {
 		this.queue = queue;
 		this.userNode = userNode;
 	}
@@ -47,7 +48,7 @@ public class ParsingTask extends Task {
 			return;
 		}
 
-		final Notification notification = new Notification(userUID, token);
+		final TokenNotification notification = new TokenNotification(userUID, token);
 
 		logger.debug("User <" + userUID + "> has " + events.getChildrenCount() + " dashboards");
 		for (DataSnapshot dashboardNode : events.getChildren()) {
@@ -55,7 +56,7 @@ public class ParsingTask extends Task {
 			logger.debug("Dashboard <" + dashboardNode.getKey() + "> has " + dashboardNode.getChildrenCount() + " events");
 			for (DataSnapshot eventNode : dashboardNode.getChildren()) {
 
-				final EventModel event = eventNode.getValue(EventModel.class);
+				final Event event = eventNode.getValue(Event.class);
 				if (event == null || event.isInvalid()) {
 					logger.error("Event <" + eventNode.getKey() + "> in dashboard <" + dashboardNode.getKey() + "> is invalid");
 					continue;
@@ -63,7 +64,7 @@ public class ParsingTask extends Task {
 
 				logger.debug("Check event <" + eventNode.getKey() + '>');
 
-				if (!PrivateNotification.isItTime(event.getTimestamp(), event.getType())) {
+				if (!Notification.isItTime(event.getTimestamp(), event.getType())) {
 					continue;
 				}
 				logger.debug("The time of event <" + eventNode.getKey() + "> has come");

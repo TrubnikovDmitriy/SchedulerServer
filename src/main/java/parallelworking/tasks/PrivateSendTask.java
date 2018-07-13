@@ -3,16 +3,16 @@ package parallelworking.tasks;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
-import models.EventModel;
-import models.Notification;
+import models.Event;
+import models.TokenNotification;
 import org.apache.log4j.Logger;
 import parallelworking.Task;
 
-public class SendingTask extends Task {
+public class PrivateSendTask extends Task<TokenNotification> {
 
-	private final Notification notification;
+	private final TokenNotification notification;
 
-	public SendingTask(Notification notification) {
+	public PrivateSendTask(TokenNotification notification) {
 		this.notification = notification;
 	}
 
@@ -22,7 +22,7 @@ public class SendingTask extends Task {
 		logger.debug("Sending [" + notification.getNotification().size() +
 				" message(s)] for user " + notification.getUserUID());
 
-		for (final EventModel event : notification.getNotification()) {
+		for (final Event event : notification.getNotification()) {
 			// Build message
 			final Message message = Message.builder()
 					.setToken(notification.getToken())
@@ -32,7 +32,7 @@ public class SendingTask extends Task {
 			// Send message
 			try {
 				final String response = FirebaseMessaging.getInstance().send(message);
-				logger.debug("Successfully sent message: " + response);
+				logger.debug("Successfully sent message to user: " + response);
 
 			} catch (FirebaseMessagingException e) {
 				logger.error(e.getMessage(), e);

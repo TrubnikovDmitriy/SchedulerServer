@@ -2,7 +2,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
 import com.google.firebase.internal.NonNull;
-import notifications.NotificationService;
+import services.NotificationService;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
