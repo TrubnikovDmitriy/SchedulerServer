@@ -41,8 +41,8 @@ public class PrivateNotification extends Notification {
 		final TasksExecutor sendExecutor = new PrivateSendExecutor(executor, notifications);
 
 		final LinkedList<TasksExecutor> list = new LinkedList<>();
-		list.push(parseExecutor);
-		list.push(sendExecutor);
+		list.add(parseExecutor);
+		list.add(sendExecutor);
 		return list;
 	}
 
