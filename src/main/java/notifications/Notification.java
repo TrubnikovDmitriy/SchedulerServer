@@ -9,8 +9,9 @@ import models.Event;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import parallelworking.DateChecker;
+import parallelworking.TasksExecutor;
 
-
+import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -18,9 +19,9 @@ public abstract class Notification implements Runnable, ValueEventListener, Date
 
 	private final AtomicBoolean isActive = new AtomicBoolean(false);
 
-	protected long retrieveTime = 0L;
-	protected long newTime = 0L;
-	protected long oldTime = DateTime.now().getMillis();
+	private long retrieveTime = 0L;
+	private long newTime = 0L;
+	private long oldTime = DateTime.now().getMillis();
 
 	protected final Logger logger = Logger.getLogger(getClass());
 	protected final long millisecDelay;
@@ -49,7 +50,7 @@ public abstract class Notification implements Runnable, ValueEventListener, Date
 	public final void onDataChange(DataSnapshot dataSnapshot) {
 		newTime = DateTime.now().getMillis();
 		logger.info("Received data snapshot for [" + (newTime - retrieveTime) + " ms]");
-		logger.debug("Start searching the events between " + oldTime + " and " + newTime);
+		logger.info("Start searching the events between " + oldTime + " and " + newTime);
 
 		if (dataSnapshot != null) {
 			processData(dataSnapshot);
@@ -65,8 +66,26 @@ public abstract class Notification implements Runnable, ValueEventListener, Date
 		isActive.set(false);
 	}
 
+	private void processData(@NonNull DataSnapshot snapshot) {
 
-	protected abstract void processData(@NonNull DataSnapshot snapshot);
+		final Queue<TasksExecutor> executors = getExecutors(snapshot);
+
+		try {
+			for (final TasksExecutor executor : executors) {
+				executor.parallelExecute();
+			}
+
+		} catch (InterruptedException e) {
+			logger.error("Data processing was interrupted", e);
+			return;
+		}
+
+		logger.info("End retrieve private data from Firebase RD");
+		oldTime = newTime;
+	}
+
+
+	protected abstract Queue<TasksExecutor> getExecutors(@NonNull DataSnapshot inputData);
 
 	protected abstract DatabaseReference getReference();
 
